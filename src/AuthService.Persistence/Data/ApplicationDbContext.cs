@@ -16,7 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles {get; set; } 
     public DbSet<UserRole> UserRoles {get; set; } 
     public DbSet<UserEmail> UserEmails {get; set; } 
-    public DbSet<UserPasswordReset> UserPasswordResets {get; set; } 
+    public DbSet<UserPasswordReset> UserPasswordReset {get; set; } 
  
     //Convierte camelCase a snake_case
 protected override void OnModelCreating(ModelBuilder modelBuilder)
