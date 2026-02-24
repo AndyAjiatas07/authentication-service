@@ -32,7 +32,7 @@ public class RoleRepository(ApplicationDbContext context) : IRoleRepository
             .ContinueWith(t =>(IReadOnlyList<User>)t.Result);
     }
 
-    public async Task<IReadOnlyList<string>> GetUserRoleNamesAsync(string userId)
+    public async Task<IReadOnlyList<string>> GetUserRoleNameAsync(string userId)
     {
         return await context.UserRoles
             .Where(ur => ur.UserId == userId)

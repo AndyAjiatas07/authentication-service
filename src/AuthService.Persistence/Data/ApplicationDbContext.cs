@@ -69,7 +69,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
         .OnDelete(DeleteBehavior.Cascade);
  
         //Relacion con UserPasswordReset
-        entity.HasOne(e => e.PasswordReset)
+        entity.HasOne(e => e.UserPasswordReset)
         .WithOne(upr => upr.User)
         .HasForeignKey<UserPasswordReset>(upr => upr.UserId)
         .OnDelete(DeleteBehavior.Cascade);

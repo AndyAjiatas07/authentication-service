@@ -18,7 +18,11 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
             .Include(u => u.UserRoles)
             .FirstOrDefaultAsync(u => u.Id == id);
 
-throw new InvalidOperationException($"User with ID {id} not found.");    }
+        if (user == null)
+            throw new InvalidOperationException($"User with ID {id} not found.");
+
+        return user;
+    }
 
     //2. Busca un usuario por su correo electrónico
     public async Task<User?> GetByEmailAsync(string email)
@@ -28,9 +32,8 @@ throw new InvalidOperationException($"User with ID {id} not found.");    }
             .Include(u => u.UserEmail)
             .Include(u => u.UserPasswordReset)
             .Include(u => u.UserRoles)
-            .FirstOrDefaultAsync(u => u.UserEmail.Email == email);
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
-
     //3. Busca un usuario por su nombre de usuario
     public async Task<User?> GetByUsernameAsync(string username)
     {
