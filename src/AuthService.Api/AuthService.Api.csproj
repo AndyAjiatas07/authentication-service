@@ -12,11 +12,12 @@
     <PackageReference Include="NetEscapades.AspNetCore.SecurityHeaders" Version="1.2.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.20" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AuthService.Application\AuthService.Application.csproj" />
-    <ProjectReference Include="..\AuthService.Persistence\AuthService.Persistence.csproj" />
+    <ProjectReference Include="../AuthService.Persistence/AuthService.Persistence.csproj" />
+    <ProjectReference Include="../AuthService.Application/AuthService.Application.csproj" />
   </ItemGroup>
 
 </Project>
