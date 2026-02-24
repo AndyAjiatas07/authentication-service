@@ -1,7 +1,10 @@
-using AuthService.Persistence;  // Importa el espacio de nombres de ApplicationDbContext
-using AuthService.Application;  // Si DataSeeder está aquí, importa este espacio de nombres
+using AuthService.Persistence;
+using AuthService.Persistence.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -37,8 +40,6 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
-app.Run();
-
 // INICIALIZACIÓN DE LA BASE DE DATOS
 using (var scope = app.Services.CreateScope())
 {
@@ -58,9 +59,11 @@ using (var scope = app.Services.CreateScope())
     catch (Exception es)
     {
         logger.LogError(es, "Error al inicializar la base de datos");
-        throw; // Detener la aplicación si hay un error al inicializar la base de datos
+        throw;
     }
 }
+
+app.Run();
 
 // Definición del record WeatherForecast
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
