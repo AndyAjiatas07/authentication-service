@@ -6,7 +6,7 @@ public class User
 {
     [Key]
     [MaxLength(16)]
-    public string Id {get; set; }
+    public string Id { get; set; } = null!;
  
     [Required(ErrorMessage = "El nombre es obligatorio")]
     [MaxLength(25)]
