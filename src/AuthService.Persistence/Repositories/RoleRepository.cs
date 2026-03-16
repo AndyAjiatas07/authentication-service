@@ -33,14 +33,16 @@ public class RoleRepository(ApplicationDbContext context) : IRoleRepository
             .FirstOrDefaultAsync(r => r.Name == roleName);
     }
 
-    public async Task<int> CountUsersInRoleAsync(string roleName)
+    // 👇 NUEVO NOMBRE
+    public async Task<int> CountUsersByRoleNameAsync(string roleName)
     {
         return await context.UserRoles
             .Where(ur => ur.Role.Name == roleName)
             .CountAsync();
     }
 
-    public async Task<IReadOnlyList<User>> GetUsersByRoleAsync(string roleName)
+    // 👇 NUEVO NOMBRE
+    public async Task<IReadOnlyList<User>> GetUsersByRoleNameAsync(string roleName)
     {
         return await context.UserRoles
             .Where(ur => ur.Role.Name == roleName)
@@ -49,8 +51,7 @@ public class RoleRepository(ApplicationDbContext context) : IRoleRepository
             .Include(u => u.UserEmail)
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<User>)t.Result);
+            .ToListAsync();
     }
 
     public async Task<IReadOnlyList<string>> GetUserRoleNamesAsync(string userId)
@@ -58,7 +59,6 @@ public class RoleRepository(ApplicationDbContext context) : IRoleRepository
         return await context.UserRoles
             .Where(ur => ur.UserId == userId)
             .Select(ur => ur.Role.Name)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<string>)t.Result);
+            .ToListAsync();
     }
 }

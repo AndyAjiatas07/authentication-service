@@ -36,8 +36,6 @@ public static class DataSeeder
                     Id = userId, 
                     Username = "admin",
                     Email = "admin@ksports.local",
-                    PasswordHash = "12345678", 
-                    Role = "Admin",
                     CreatedAt = DateTime.UtcNow,
                     UserProfile = new UserProfile
                     {
