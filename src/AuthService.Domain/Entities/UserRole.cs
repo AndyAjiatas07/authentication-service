@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AuthService.Domain.Entities;
 
@@ -24,5 +25,6 @@ public class UserRole
 
     // Timestamps to align with DB schema (NOT NULL)
     public DateTime CreatedAt { get; set; }
+    
     public DateTime UpdatedAt { get; set; }
 }

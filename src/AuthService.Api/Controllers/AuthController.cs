@@ -12,8 +12,7 @@ namespace AuthService.Api.Controllers;
 [Route("api/v1/[controller]")]
 public class AuthController(IAuthService authService) : ControllerBase
 {
-	// ...
-        [HttpGet("profile")]
+	[HttpGet("profile")]
     [Authorize]
     public async Task<ActionResult<object>> GetProfile()
     {
@@ -35,7 +34,8 @@ public class AuthController(IAuthService authService) : ControllerBase
             data = user
         });
     }
-        [HttpPost("profile/by-id")]
+
+    [HttpPost("profile/by-id")]
     [EnableRateLimiting("ApiPolicy")]
     public async Task<ActionResult<object>> GetProfileById([FromBody] GetProfileByIdDto request)
     {
@@ -65,7 +65,8 @@ public class AuthController(IAuthService authService) : ControllerBase
             data = user
         });
     }
-        [HttpPost("register")]
+
+    [HttpPost("register")]
     [RequestSizeLimit(10 * 1024 * 1024)] // 10MB límite
     [EnableRateLimiting("AuthPolicy")]
     public async Task<ActionResult<RegisterResponseDto>> Register([FromForm] RegisterDto registerDto)
@@ -74,21 +75,24 @@ public class AuthController(IAuthService authService) : ControllerBase
         // Devolver 201 Created para registro
         return StatusCode(201, result);
     }
-        [HttpPost("login")]
+
+    [HttpPost("login")]
     [EnableRateLimiting("AuthPolicy")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
     {
         var result = await authService.LoginAsync(loginDto);
         return Ok(result);
     }
-        [HttpPost("verify-email")]
+
+    [HttpPost("verify-email")]
     [EnableRateLimiting("ApiPolicy")]
     public async Task<ActionResult<EmailResponseDto>> VerifyEmail([FromBody] VerifyEmailDto verifyEmailDto)
     {
         var result = await authService.VerifyEmailAsync(verifyEmailDto);
         return Ok(result);
     }
-        [HttpPost("resend-verification")]
+
+    [HttpPost("resend-verification")]
     [EnableRateLimiting("AuthPolicy")]
     public async Task<ActionResult<EmailResponseDto>> ResendVerification([FromBody] ResendVerificationDto resendDto)
     {
@@ -112,7 +116,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(result);
     }
-        [HttpPost("forgot-password")]
+
+    [HttpPost("forgot-password")]
     [EnableRateLimiting("AuthPolicy")]
     public async Task<ActionResult<EmailResponseDto>> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
     {
@@ -127,7 +132,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(result);
     }
-        [HttpPost("reset-password")]
+
+    [HttpPost("reset-password")]
     [EnableRateLimiting("AuthPolicy")]
     public async Task<ActionResult<EmailResponseDto>> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
     {

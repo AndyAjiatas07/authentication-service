@@ -15,14 +15,11 @@ public class UserProfile
     public string UserId { get; set; } = string.Empty;
 
     public string? ProfilePictureUrl { get; set; }
-
     public string? Bio { get; set; }
 
-    public DateTime? DateOfBirth { get; set; }
-    // Relación
-    public User User { get; set; } = null!;
-    
-    public string? ProfilePicture { get; set; }
-
     public string? Phone { get; set; }
+
+    public DateTime DateOfBirth { get; set; }
+
+    public User User { get; set; } = null!;
 }

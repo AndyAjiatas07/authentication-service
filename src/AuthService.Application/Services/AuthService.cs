@@ -1,16 +1,15 @@
 using AuthService.Application.DTOs;
 using AuthService.Application.Interfaces;
 using AuthService.Application.Exceptions;
-using AuthService.Application.Extensions;
 using AuthService.Application.Validators;
 using AuthService.Domain.Constants;
 using AuthService.Domain.Entities;
 using AuthService.Domain.Interfaces;
-using AuthService.Domain.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using AuthService.Application.DTOs.Email;
-using UserRoleEntity = AuthService.Domain.Entities.UserRole;
+using AuthService.Application.Extensions;
+
 
 namespace AuthService.Application.Services;
 
@@ -25,8 +24,8 @@ public class AuthService(
     ILogger<AuthService> logger) : IAuthService
 {
 
+	private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
 
-        private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
     public async Task<RegisterResponseDto> RegisterAsync(RegisterDto registerDto)
     {
         // Verificar si el email ya existe
@@ -47,26 +46,25 @@ public class AuthService(
         string profilePicturePath;
 
         if (registerDto.ProfilePicture != null && registerDto.ProfilePicture.Size > 0)
-{
-    var (isValid, errorMessage) = FileValidator.ValidateImage(registerDto.ProfilePicture);
+        {
+            var (isValid, errorMessage) = FileValidator.ValidateImage(registerDto.ProfilePicture);
+            if (!isValid)
+            {
+                logger.LogWarning($"File validation failed: {errorMessage}");
+                throw new BusinessException(ErrorCodes.INVALID_FILE_FORMAT, errorMessage!);
+            }
 
-    if (!isValid)
-    {
-        logger.LogWarning("File validation failed: {ErrorMessage}", errorMessage);
-        throw new BusinessException(ErrorCodes.INVALID_FILE_FORMAT, errorMessage!);
-    }
-
-    try
-    {
-        var fileName = FileValidator.GenerateSecureFileName(registerDto.ProfilePicture.FileName);
-        profilePicturePath = await _cloudinaryService.UploadImageAsync(registerDto.ProfilePicture, fileName);
-    }
-    catch (Exception ex)
-{
-    logger.LogImageUploadError(ex);
-    throw new BusinessException(ErrorCodes.IMAGE_UPLOAD_FAILED, "Failed to upload profile image");
-}
-}
+            try
+            {
+                var fileName = FileValidator.GenerateSecureFileName(registerDto.ProfilePicture.FileName);
+                profilePicturePath = await _cloudinaryService.UploadImageAsync(registerDto.ProfilePicture, fileName);
+            }
+            catch (Exception)
+            {
+                logger.LogImageUploadError();
+                throw new BusinessException(ErrorCodes.IMAGE_UPLOAD_FAILED, "Failed to upload profile image");
+            }
+        }
         else
         {
             profilePicturePath = _cloudinaryService.GetDefaultAvatarUrl();
@@ -100,7 +98,7 @@ public class AuthService(
             {
                 Id = userProfileId,
                 UserId = userId,
-                ProfilePicture = profilePicturePath,
+                ProfilePictureUrl = profilePicturePath,
                 Phone = registerDto.Phone
             },
             UserEmail = new UserEmail
@@ -109,17 +107,17 @@ public class AuthService(
                 UserId = userId,
                 EmailVerified = false,
                 EmailVerificationToken = emailVerificationToken,
-                EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24)
+                EmailVerificationTokenExpiration = DateTime.UtcNow.AddHours(24)
             },
-            UserRoles = new List<UserRoleEntity>
-{
-    new UserRoleEntity
-    {
-        Id = userRoleId,
-        UserId = userId,
-        RoleId = defaultRole.Id
-    }
-}
+            UserRoles =
+            [
+                new Domain.Entities.UserRole
+                {
+                    Id = userRoleId,
+                    UserId = userId,
+                    RoleId = defaultRole.Id
+                }
+            ]
         };
 
         // Guardar usuario y entidades relacionadas
@@ -150,6 +148,7 @@ public class AuthService(
             EmailVerificationRequired = true
         };
     }
+
     public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
     {
         // Buscar usuario por email o username
@@ -190,11 +189,7 @@ public class AuthService(
         logger.LogUserLoggedIn();
 
         // Generar token JWT
-        if (user.UserProfile == null)
-        {
-            throw new Exception("User profile not found");
-        }
-        var token = jwtTokenService.GenerateToken(user.UserProfile!);
+        var token = jwtTokenService.GenerateToken(user);
         var expiryMinutes = int.Parse(configuration["JwtSettings:ExpiryInMinutes"] ?? "30");
 
         // Crear respuesta compacta
@@ -207,6 +202,7 @@ public class AuthService(
             ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes)
         };
     }
+
     private UserResponseDto MapToUserResponseDto(User user)
     {
         var userRole = user.UserRoles.FirstOrDefault()?.Role?.Name ?? RoleConstants.USER_ROLE;
@@ -217,7 +213,7 @@ public class AuthService(
             Surname = user.Surname,
             Username = user.Username,
             Email = user.Email,
-            ProfilePicture = _cloudinaryService.GetFullImageUrl(user.UserProfile?.ProfilePicture ?? string.Empty),
+            ProfilePicture = _cloudinaryService.GetFullImageUrl(user.UserProfile?.ProfilePictureUrl ?? string.Empty),
             Phone = user.UserProfile?.Phone ?? string.Empty,
             Role = userRole,
             Status = user.Status,
@@ -226,16 +222,18 @@ public class AuthService(
             UpdatedAt = user.UpdatedAt
         };
     }
+
         private UserDetailsDto MapToUserDetailsDto(User user)
     {
         return new UserDetailsDto
         {
             Id = user.Id,
             Username = user.Username,
-            ProfilePicture = _cloudinaryService.GetFullImageUrl(user.UserProfile?.ProfilePicture ?? string.Empty),
+            ProfilePicture = _cloudinaryService.GetFullImageUrl(user.UserProfile?.ProfilePictureUrl ?? string.Empty),
             Role = user.UserRoles.FirstOrDefault()?.Role?.Name ?? RoleConstants.USER_ROLE
         };
     }
+
     public async Task<EmailResponseDto> VerifyEmailAsync(VerifyEmailDto verifyEmailDto)
     {
         var user = await userRepository.GetByEmailVerificationTokenAsync(verifyEmailDto.Token);
@@ -251,7 +249,7 @@ public class AuthService(
         user.UserEmail.EmailVerified = true;
         user.Status = true;
         user.UserEmail.EmailVerificationToken = null;
-        user.UserEmail.EmailVerificationTokenExpiry = null;
+        user.UserEmail.EmailVerificationTokenExpiration = null;
 
         await userRepository.UpdateAsync(user);
 
@@ -278,6 +276,7 @@ public class AuthService(
             }
         };
     }
+
         public async Task<EmailResponseDto> ResendVerificationEmailAsync(ResendVerificationDto resendDto)
     {
         var user = await userRepository.GetByEmailAsync(resendDto.Email);
@@ -304,7 +303,7 @@ public class AuthService(
         // Generar nuevo token
         var newToken = TokenGenerator.GenerateEmailVerificationToken();
         user.UserEmail.EmailVerificationToken = newToken;
-        user.UserEmail.EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
+        user.UserEmail.EmailVerificationTokenExpiration = DateTime.UtcNow.AddHours(24);
 
         await userRepository.UpdateAsync(user);
 
@@ -330,6 +329,7 @@ public class AuthService(
             };
         }
     }
+
         public async Task<EmailResponseDto> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
     {
         var user = await userRepository.GetByEmailAsync(forgotPasswordDto.Email);
@@ -353,13 +353,13 @@ public class AuthService(
             {
                 UserId = user.Id,
                 PasswordResetToken = resetToken,
-                PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1)
+                PasswordResetTokenExpiration = DateTime.UtcNow.AddHours(1)
             };
         }
         else
         {
             user.UserPasswordReset.PasswordResetToken = resetToken;
-            user.UserPasswordReset.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); // 1 hora para resetear
+            user.UserPasswordReset.PasswordResetTokenExpiration = DateTime.UtcNow.AddHours(1); // 1 hora para resetear
         }
 
         await userRepository.UpdateAsync(user);
@@ -382,23 +382,24 @@ public class AuthService(
             Data = new { email = forgotPasswordDto.Email, initiated = true }
         };
     }
+
     public async Task<EmailResponseDto> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
     {
-        var user = await userRepository.GetByPasswordResetTokenAsync(resetPasswordDto.Token);
+        var user = await userRepository.GetByPasswordResetTokenAsync(resetPasswordDto.ResetToken);
         if (user == null || user.UserPasswordReset == null)
         {
             return new EmailResponseDto
             {
                 Success = false,
                 Message = "Token de reset inválido o expirado",
-                Data = new { token = resetPasswordDto.Token, reset = false }
+                Data = new { token = resetPasswordDto.ResetToken, reset = false }
             };
         }
 
         // Actualizar contraseña
         user.Password = passwordHashService.HashPassword(resetPasswordDto.NewPassword);
-        user.UserPasswordReset.PasswordResetToken = null;
-        user.UserPasswordReset.PasswordResetTokenExpiry = null;
+        user.UserPasswordReset.PasswordResetToken = string.Empty;
+        user.UserPasswordReset.PasswordResetTokenExpiration = DateTime.UtcNow.AddDays(-1); 
 
         await userRepository.UpdateAsync(user);
 
@@ -411,7 +412,8 @@ public class AuthService(
             Data = new { email = user.Email, reset = true }
         };
     }
-public async Task<UserResponseDto?> GetUserByIdAsync(string userId)
+
+    public async Task<UserResponseDto?> GetUserByIdAsync(string userId)
     {
         var user = await userRepository.GetByIdAsync(userId);
         if (user == null)

@@ -6,8 +6,7 @@ namespace AuthService.Api.Extensions;
 
 public static class AuthenticationExtensions
 {
-	// ...
-   public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+	public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
@@ -33,5 +32,5 @@ public static class AuthenticationExtensions
         });
 
         return services;
-    } 
+    }
 }
